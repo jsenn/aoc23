@@ -18,6 +18,6 @@ def normdig:
 def firstdig: match("\\d|one|two|three|four|five|six|seven|eight|nine").string | normdig;
 def lastdig: revstr | match("\\d|eno|owt|eerht|ruof|evif|xis|neves|thgie|enin").string | revstr | normdig;
 
-split("\n")
+lines
 | map(firstdig + lastdig | tonumber)
 | add
