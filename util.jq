@@ -9,8 +9,13 @@ def is_dot: . == 46;
 
 def assert(cond): if cond|not then ("Assertion failure" | halt_error) end;
 
-def repeatn($n):
+def repeatn(n):
 	. as $val
-	| [range(0; $n)] | map($val)
+	| [range(0; n)] | map($val)
 	;
 
+def intersect_with($b): . - (. - $b);
+
+def trim: sub("^\\s+"; "") | sub("\\s+$"; "");
+
+def enumerate: [[range(0; length)], .] | transpose;
