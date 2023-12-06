@@ -22,3 +22,16 @@ def trim: sub("^\\s+"; "") | sub("\\s+$"; "");
 
 def enumerate: [[range(0; length)], .] | transpose;
 def unenumerate: map(.[1]);
+
+def solve_quadratic($a; $b; $c):
+	($b * $b - 4 * $a * $c) as $d
+	| if $d < 0 then
+		[]
+	else
+		[
+			(-$b - ($d|sqrt)) / (2*$a),
+			(-$b + ($d|sqrt)) / (2*$a)
+		]
+		| sort
+	end
+	;
