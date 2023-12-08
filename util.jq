@@ -35,3 +35,19 @@ def solve_quadratic($a; $b; $c):
 		| sort
 	end
 	;
+
+def gcd($i; $j):
+	[$i, $j]
+	| until(.[1] == 0;
+		.[1] as $old
+		| .[1] = .[0] % .[1]
+		| .[0] = $old
+	)
+	| .[0]
+	;
+
+def lcm:
+	reduce .[] as $i (1;
+		. = (. * $i) / gcd(.; $i)
+	)
+	;
