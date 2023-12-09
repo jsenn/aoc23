@@ -7,7 +7,7 @@ def mul: reduce .[] as $x (1; . * $x);
 def is_digit: . >= 48 and . <= 57;
 def is_dot: . == 46;
 
-def extract_numbers: [scan("-?\\d+")] | map(tonumber);
+def extract_numbers: [scan("-?\\d+(?:\\.\\d+)?")] | map(tonumber);
 
 def assert(cond; msg): if cond|not then (msg | halt_error) end;
 
