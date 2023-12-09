@@ -7,7 +7,7 @@ def mul: reduce .[] as $x (1; . * $x);
 def is_digit: . >= 48 and . <= 57;
 def is_dot: . == 46;
 
-def extract_numbers: [scan("\\d+")] | map(tonumber);
+def extract_numbers: [scan("-?\\d+")] | map(tonumber);
 
 def assert(cond; msg): if cond|not then (msg | halt_error) end;
 
@@ -49,5 +49,21 @@ def gcd($i; $j):
 def lcm:
 	reduce .[] as $i (1;
 		. = (. * $i) / gcd(.; $i)
+	)
+	;
+
+def all_same:
+	if length == 0 then
+		true
+	else
+		.[0] as $first
+		| all(. == $first)
+	end
+	;
+
+def diffs:
+	. as $seq
+	| reduce range(1; length) as $idx ([];
+		. += [$seq[$idx] - $seq[$idx-1]]
 	)
 	;
