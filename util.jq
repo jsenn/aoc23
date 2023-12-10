@@ -1,8 +1,11 @@
+def is_empty: length == 0;
 def nonempty: length > 0;
 def lines: split("\n") | map(select(nonempty));
 def revstr: explode | reverse | implode;
 
 def mul: reduce .[] as $x (1; . * $x);
+
+def div($i; $j): $i / $j | floor;
 
 def is_digit: . >= 48 and . <= 57;
 def is_dot: . == 46;
@@ -67,3 +70,5 @@ def diffs:
 		. += [$seq[$idx] - $seq[$idx-1]]
 	)
 	;
+
+def pop: . |= .[0:-1];

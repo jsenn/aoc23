@@ -1,8 +1,20 @@
 include "util";
 
 def Grid($nrows; $ncols):
-	assert($nrows * $ncols == length)
+	assert($nrows * $ncols == length; "Can't create \($nrows)x\($ncols) grid from \(length) values")
 	| {"nrows": $nrows, "ncols": $ncols, "vals": .}
+	;
+
+def from_rows:
+	length as $nrows
+	| (.[0] | length) as $ncols
+	| flatten
+	| Grid($nrows; $ncols)
+	;
+
+def zeros($nrows; $ncols):
+	0 | repeatn($nrows * $ncols)
+	| Grid($nrows; $ncols)
 	;
 
 def enumerate_rc:
@@ -35,7 +47,31 @@ def print_bin:
 	| join("\n")
 	;
 
-def get($grid): $grid.vals[.[0] * $grid.ncols + .[1]];
+def i2rc($grid): [div(.; $grid.ncols), . % $grid.ncols];
+def rc2i($grid): .[0] * $grid.ncols + .[1];
+def valid_rc($grid): .[0] >= 0 and .[0] < $grid.nrows and .[1] >= 0 and .[1] < $grid.ncols;
+
+def get($grid):
+	assert(valid_rc($grid); "Invalid grid access: \(.)")
+	| rc2i($grid) as $idx
+	| $grid.vals[$idx]
+	;
+
+def update($grid; expr):
+	assert(valid_rc($grid); "Invalid grid access: \(.)")
+	| rc2i($grid) as $i
+	| get($grid) as $old
+	| $grid.vals | .[$i] |= ($old | expr)
+	;
+
+def is_edge($grid): .[0] == 0 or .[1] == 0 or .[0] == $grid.nrows - 1 or .[1] == $grid.ncols - 1;
+
+def find_rc($elem):
+	. as $grid
+	| .vals
+	| index($elem)
+	| if . >= 0 then i2rc($grid) else null end
+	;
 
 def colrange($colbegin; $colend):
 	. as $row
@@ -43,20 +79,37 @@ def colrange($colbegin; $colend):
 	| [($row | repeatn($count)), [range($colbegin; $colend)]] | transpose
 	;
 
+def neumann_rc($grid):
+	[
+		[(.[0] - 1), (.[1] + 0)],
+		[(.[0] + 0), (.[1] - 1)],
+		[(.[0] + 0), (.[1] + 1)],
+		[(.[0] + 1), (.[1] + 0)]
+	]
+	| map(select(valid_rc($grid)))
+	;
+
+def moore_rc($grid):
+	[
+		[(.[0] - 1), (.[1] - 1)],
+		[(.[0] - 1), (.[1] + 0)],
+		[(.[0] - 1), (.[1] + 1)],
+		[(.[0] + 0), (.[1] - 1)],
+		[(.[0] + 0), (.[1] + 1)],
+		[(.[0] + 1), (.[1] - 1)],
+		[(.[0] + 1), (.[1] + 0)],
+		[(.[0] + 1), (.[1] + 1)]
+	]
+	| map(select(valid_rc($grid)))
+	;
+
 def moore_neighbourhoods:
 	. as $grid
 	| enumerate_rc
-	| map([
-		([(.[0] - 1), (.[1] - 1)] | get($grid)),
-		([(.[0] - 1), (.[1] + 0)] | get($grid)),
-		([(.[0] - 1), (.[1] + 1)] | get($grid)),
-		([(.[0] + 0), (.[1] - 1)] | get($grid)),
-		([(.[0] + 0), (.[1] + 0)] | get($grid)),
-		([(.[0] + 0), (.[1] + 1)] | get($grid)),
-		([(.[0] + 1), (.[1] - 1)] | get($grid)),
-		([(.[0] + 1), (.[1] + 0)] | get($grid)),
-		([(.[0] + 1), (.[1] + 1)] | get($grid))
-	] | map(select(. != null)))
+	| map(
+		moore_rc
+		| get($grid)
+	)
 	| Grid($grid.nrows; $grid.ncols)
 	;
 
