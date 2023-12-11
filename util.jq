@@ -64,6 +64,17 @@ def all_same:
 	end
 	;
 
+def sums:
+	. as $seq
+	| if is_empty then
+		[]
+	else
+		reduce range(1; length) as $i ([.[0]];
+			. += [.[-1] + $seq[$i]]
+		)
+	end
+	;
+
 def diffs:
 	. as $seq
 	| reduce range(1; length) as $idx ([];
@@ -72,3 +83,17 @@ def diffs:
 	;
 
 def pop: . |= .[0:-1];
+
+def range_pairs($begin; $end):
+	range($begin; $end)
+	| . as $first
+	| range(($first + 1); $end) as $rest
+	| $rest
+	| [$first, .]
+	;
+
+def pairs:
+	. as $vals
+	| range_pairs(0; length)
+	| [$vals[.[0]], $vals[.[1]]]
+	;

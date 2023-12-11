@@ -12,6 +12,17 @@ def from_rows:
 	| Grid($nrows; $ncols)
 	;
 
+def to_rows:
+	. as $grid
+	| reduce range(0; .nrows) as $row_idx ([];
+		($row_idx * $grid.ncols) as $row_start
+		| ($row_start + $grid.ncols) as $row_end
+		| . += [$grid.vals[$row_start:$row_end]]
+	)
+	;
+
+def to_cols: to_rows | transpose;
+
 def zeros($nrows; $ncols):
 	0 | repeatn($nrows * $ncols)
 	| Grid($nrows; $ncols)
