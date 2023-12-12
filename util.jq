@@ -23,6 +23,38 @@ def intersect_with($b): . - (. - $b);
 
 def trim: sub("^\\s+"; "") | sub("\\s+$"; "");
 
+def repeatstr($n):
+	explode as $chars
+	| reduce range(0; $n) as $_ ([];
+		. += $chars
+	)
+	| implode
+	;
+
+def repeatstr($n; $sep):
+	explode as $chars
+	| ($sep | explode) as $sep_chars
+	| reduce range(0; $n) as $i ([];
+		if $i > 0 then
+			. += $sep_chars + $chars
+		else
+			. += $chars
+		end
+	)
+	| implode
+	;
+
+def skip($sub):
+	.[0] as $str
+	| .[1] as $idx
+	| ($sub | length) as $l
+	| ($str | length) as $L
+	| $idx
+	| until(. + $l > $L or $str[.:. + $l] != $sub;
+		. + $l
+	)
+	;
+
 def enumerate: [[range(0; length)], .] | transpose;
 def unenumerate: map(.[1]);
 
@@ -96,4 +128,14 @@ def pairs:
 	. as $vals
 	| range_pairs(0; length)
 	| [$vals[.[0]], $vals[.[1]]]
+	;
+
+def partition:
+	reduce .[] as $x ([];
+		if is_empty or .[-1][0] != $x then
+			. += [[$x]]
+		else
+			.[-1] += [$x]
+		end
+	)
 	;
