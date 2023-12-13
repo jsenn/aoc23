@@ -55,6 +55,16 @@ def skip($sub):
 	)
 	;
 
+def hamming_dist:
+	(.[0] | explode) as $first
+	| (.[1] | explode) as $second
+	| ($first | length) as $n
+	| assert(($second | length) == $n; "Invalid input to hamming_dist: \(.)")
+	| reduce range(0; $n) as $idx (0;
+		if $first[$idx] == $second[$idx] then .  else . + 1 end
+	)
+	;
+
 def enumerate: [[range(0; length)], .] | transpose;
 def unenumerate: map(.[1]);
 
@@ -138,4 +148,22 @@ def partition:
 			.[-1] += [$x]
 		end
 	)
+	;
+
+def partition_by(f):
+	reduce .[] as $raw ([];
+		($raw | f) as $x
+		| if is_empty then
+			. += [[$raw]]
+		elif (.[-1][0] | f) != $x then
+			. += [[$raw]]
+		else
+			.[-1] += [$raw]
+		end
+	)
+	;
+
+def in_range($range):
+	assert($range | length == 2; "Invalid range given to in_range: \($range)")
+	| . >= $range[0] and . < $range[1]
 	;
