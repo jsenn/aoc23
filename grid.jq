@@ -12,6 +12,8 @@ def from_rows:
 	| Grid($nrows; $ncols)
 	;
 
+def parse: lines | map(explode) | from_rows;
+
 def to_rows:
 	. as $grid
 	| reduce range(0; .nrows) as $row_idx ([];
@@ -27,6 +29,8 @@ def zeros($nrows; $ncols):
 	0 | repeatn($nrows * $ncols)
 	| Grid($nrows; $ncols)
 	;
+
+def transpose: to_cols | from_rows;
 
 def enumerate_rc:
 	.nrows as $nrows
