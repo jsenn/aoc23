@@ -167,3 +167,14 @@ def in_range($range):
 	assert($range | length == 2; "Invalid range given to in_range: \($range)")
 	| . >= $range[0] and . < $range[1]
 	;
+
+def find_if(p):
+	label $done
+	| foreach .[] as $x (-1; . + 1;
+		if ($x | p) then
+			., break $done
+		else
+			empty
+		end
+	) // -1
+	;
