@@ -1,7 +1,14 @@
+def assert(cond; msg): if cond|not then (msg | halt_error) end;
+
 def is_empty: length == 0;
 def nonempty: length > 0;
 def lines: split("\n") | map(select(nonempty));
 def revstr: explode | reverse | implode;
+
+def min($y): if . < $y then . else $y end;
+def max($y): if . > $y then . else $y end;
+def min($x; $y): if $x < $y then $x else $y end;
+def max($x; $y): if $x > $y then $x else $y end;
 
 def mul: reduce .[] as $x (1; . * $x);
 
@@ -9,10 +16,26 @@ def div($i; $j): $i / $j | floor;
 
 def is_digit: . >= 48 and . <= 57;
 def is_dot: . == 46;
+def is_lower: . >= 97 and . <= 122;
 
 def extract_numbers: [scan("-?\\d+(?:\\.\\d+)?")] | map(tonumber);
+def extract_digits: [scan("\\d")] | map(tonumber);
 
-def assert(cond; msg): if cond|not then (msg | halt_error) end;
+def hextonumber:
+	explode
+	| reverse
+	| reduce .[] as $c ([0, 1];
+		if $c | is_digit then
+			.[0] += ($c - 48) * .[1]
+		elif $c | is_lower then
+			.[0] += ($c - 87) * .[1]
+		else
+			assert(false; "Invalid character in hex string: \($c)")
+		end
+		| .[1] *= 16
+	)
+	| .[0]
+	;
 
 def repeatn(n):
 	. as $val
@@ -42,6 +65,12 @@ def repeatstr($n; $sep):
 		end
 	)
 	| implode
+	;
+
+def left_pad($new_len; $c):
+	length as $curr_len
+	| assert($c | length == 1; "Invalid pad string: \($c)")
+	| ($c | repeatstr($new_len - $curr_len)) + .
 	;
 
 def skip($sub):
@@ -124,7 +153,59 @@ def diffs:
 	)
 	;
 
+def find_if(p):
+	label $done
+	| foreach .[] as $x (-1; . + 1;
+		if ($x | p) then
+			., break $done
+		else
+			empty
+		end
+	) // -1
+	;
+
+def find_min_by(f):
+	. as $xs
+	| reduce range(length) as $i ([-1, null];
+		($xs[$i] | f) as $val
+		| if .[0] < 0 or $val < .[1] then
+			[$i, $val]
+		else
+			.
+		end
+	)
+	| .[0]
+	;
+
+def find_min: find_min_by(.);
+
+def find_max_by(f):
+	. as $xs
+	| reduce range(length) as $i ([-1, null];
+		($xs[.] | f) as $val
+		| if .[0] < 0 or $val > .[1] then
+			[$i, $val]
+		else
+			.
+		end
+	)
+	| .[0]
+	;
+
+def find_max: find_max_by(.);
+
+def swap($i; $j):
+	.[$i] as $tmp
+	| .[$i] = .[$j]
+	| .[$j] = $tmp
+	;
+
 def pop: . |= .[0:-1];
+
+def swap_and_pop($i):
+	.[$i] = .[-1]
+	| pop
+	;
 
 def range_pairs($begin; $end):
 	range($begin; $end)
@@ -163,19 +244,28 @@ def partition_by(f):
 	)
 	;
 
+def range_partition:
+	reduce .[] as $x ([];
+		if is_empty or $x - .[-1][1] > 0 then
+			. += [[$x, $x + 1]]
+		else
+			.[-1][1] += 1
+		end
+	)
+	;
+
 def in_range($range):
 	assert($range | length == 2; "Invalid range given to in_range: \($range)")
 	| . >= $range[0] and . < $range[1]
 	;
 
-def find_if(p):
-	label $done
-	| foreach .[] as $x (-1; . + 1;
-		if ($x | p) then
-			., break $done
-		else
-			empty
-		end
-	) // -1
+def polyarea:
+	. as $points
+	| length as $n
+	| reduce range($n) as $i (0;
+		$points[$i] as $p
+		| $points[($i + 1) % $n] as $q
+		| . + $p[0] * $q[1] - $q[0] * $p[1]
+	)
+	| . / 2
 	;
-

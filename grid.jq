@@ -5,6 +5,10 @@ def Grid($nrows; $ncols):
 	| {"nrows": $nrows, "ncols": $ncols, "vals": .}
 	;
 
+def i2rc($i): [div($i; .ncols), $i % .ncols];
+def rc2i($rc): $rc[0] * .ncols + $rc[1];
+def valid_rc($rc): $rc[0] >= 0 and $rc[0] < .nrows and $rc[1] >= 0 and $rc[1] < .ncols;
+
 def from_rows:
 	length as $nrows
 	| (.[0] | length) as $ncols
@@ -25,10 +29,22 @@ def to_rows:
 
 def to_cols: to_rows | transpose;
 
-def zeros($nrows; $ncols):
-	0 | repeatn($nrows * $ncols)
+def subgrid($min; $max):
+	. as $grid
+	| reduce range($min[0]; $max[0]) as $row ([];
+		($grid | rc2i([$row, $min[1]])) as $start
+		| ($grid | rc2i([$row, $max[1]])) as $end
+		| . + $grid.vals[$start:$end]
+	)
+	| Grid($max[0] - $min[0]; $max[1] - $min[1])
+	;
+
+def filled($val; $nrows; $ncols):
+	$val | repeatn($nrows * $ncols)
 	| Grid($nrows; $ncols)
 	;
+
+def zeros($nrows; $ncols): filled(0; $nrows; $ncols);
 
 def transpose: to_cols | from_rows;
 
@@ -54,7 +70,7 @@ def to_rows:
 	;
 
 def print_bin:
-	rows
+	to_rows
 	| map(
 		map(if . then "1" else "0" end)
 		| join("")
@@ -62,24 +78,56 @@ def print_bin:
 	| join("\n")
 	;
 
-def i2rc($grid): [div(.; $grid.ncols), . % $grid.ncols];
-def rc2i($grid): .[0] * $grid.ncols + .[1];
-def valid_rc($grid): .[0] >= 0 and .[0] < $grid.nrows and .[1] >= 0 and .[1] < $grid.ncols;
-
-def get($grid):
-	assert(valid_rc($grid); "Invalid grid access: \(.)")
-	| rc2i($grid) as $idx
-	| $grid.vals[$idx]
+def pprint:
+	. as $grid
+	| (.vals | map(tostring)) as $str_vals
+	| ($str_vals | map(length) | max) as $max_len
+	| $str_vals
+	| map(
+		left_pad($max_len; " ")
+	)
+	| Grid($grid.nrows; $grid.ncols)
+	| to_rows
+	| map(
+		join(" ")
+	)
+	| join("\n")
 	;
 
-def update($grid; expr):
-	assert(valid_rc($grid); "Invalid grid access: \(.)")
-	| rc2i($grid) as $i
-	| get($grid) as $old
-	| $grid.vals | .[$i] |= ($old | expr)
+def dir_from($rc): [.[0] - $rc[0], .[1] - $rc[1]];
+def dir_to($rc): [$rc[0] - .[0], $rc[1] - .[1]];
+
+def top_left_rc: [0, 0];
+def top_right_rc: [0, .ncols - 1];
+def bottom_left_rc: [.nrows - 1, 0];
+def bottom_right_rc: [.nrows - 1, .ncols - 1];
+
+def _bounds_check($rc): assert(valid_rc($rc); "Invalid grid access: \($rc)");
+
+def get($rc):
+	_bounds_check($rc)
+	| rc2i($rc) as $idx
+	| .vals[$idx]
 	;
 
-def is_edge($grid): .[0] == 0 or .[1] == 0 or .[0] == $grid.nrows - 1 or .[1] == $grid.ncols - 1;
+def get_from($grid):
+	. as $rc
+	| $grid
+	| get($rc)
+	;
+
+def set($rc; $val):
+	_bounds_check($rc)
+	| rc2i($rc) as $idx
+	| .vals[$idx] |= $val
+	;
+
+def update($rc; expr):
+	get($rc) as $old
+	| set($rc; ($old | expr))
+	;
+
+def is_edge($rc): $rc[0] == 0 or $rc[1] == 0 or $rc[0] == .nrows - 1 or $rc[1] == .ncols - 1;
 
 def find_rc($elem):
 	. as $grid
@@ -94,38 +142,38 @@ def colrange($colbegin; $colend):
 	| [($row | repeatn($count)), [range($colbegin; $colend)]] | transpose
 	;
 
-def neumann_rc($grid):
-	[
-		[(.[0] - 1), (.[1] + 0)],
-		[(.[0] + 0), (.[1] - 1)],
-		[(.[0] + 0), (.[1] + 1)],
-		[(.[0] + 1), (.[1] + 0)]
-	]
-	| map(select(valid_rc($grid)))
-	;
-
-def moore_rc($grid):
-	[
-		[(.[0] - 1), (.[1] - 1)],
-		[(.[0] - 1), (.[1] + 0)],
-		[(.[0] - 1), (.[1] + 1)],
-		[(.[0] + 0), (.[1] - 1)],
-		[(.[0] + 0), (.[1] + 1)],
-		[(.[0] + 1), (.[1] - 1)],
-		[(.[0] + 1), (.[1] + 0)],
-		[(.[0] + 1), (.[1] + 1)]
-	]
-	| map(select(valid_rc($grid)))
-	;
-
-def moore_neighbourhoods:
+def neumann_rc($rc):
 	. as $grid
-	| enumerate_rc
-	| map(
-		moore_rc
-		| get($grid)
-	)
-	| Grid($grid.nrows; $grid.ncols)
+	| [
+		[($rc[0] - 1), ($rc[1] + 0)],
+		[($rc[0] + 0), ($rc[1] - 1)],
+		[($rc[0] + 0), ($rc[1] + 1)],
+		[($rc[0] + 1), ($rc[1] + 0)]
+	]
+	| map(select(
+		. as $rc
+		| $grid
+		| valid_rc($rc)
+	))
+	;
+
+def moore_rc($rc):
+	. as $grid
+	| [
+		[($rc[0] - 1), ($rc[1] - 1)],
+		[($rc[0] - 1), ($rc[1] + 0)],
+		[($rc[0] - 1), ($rc[1] + 1)],
+		[($rc[0] + 0), ($rc[1] - 1)],
+		[($rc[0] + 0), ($rc[1] + 1)],
+		[($rc[0] + 1), ($rc[1] - 1)],
+		[($rc[0] + 1), ($rc[1] + 0)],
+		[($rc[0] + 1), ($rc[1] + 1)]
+	]
+	| map(select(
+		. as $rc
+		| $grid
+		| valid_rc($rc)
+	))
 	;
 
 def dilate:
@@ -135,3 +183,18 @@ def dilate:
 	| Grid($grid.nrows; $grid.ncols)
 	;
 
+def flood_fill($start):
+	{
+		"q": [$start],
+		"grid": .
+	}
+	| until(.q | is_empty;
+		.q.[-1] as $curr
+		| .q |= pop
+		| if (.grid | get($curr)) == 0 then
+			.grid |= set($curr; 1)
+			| .q += (.grid | neumann_rc($curr))
+		end
+	)
+	| .grid
+	;
