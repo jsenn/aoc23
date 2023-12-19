@@ -63,5 +63,5 @@ parse_input
 | walk_points
 | (reverse | polyarea) as $A
 | count_boundary as $b
-| ($A - $b/2 - 1) as $i
-| $i + $b + 2
+| ($A - $b/2 + 1) as $i
+| $i + $b
