@@ -259,6 +259,14 @@ def in_range($range):
 	| . >= $range[0] and . < $range[1]
 	;
 
+def range_intersect_inclusive($other):
+	[
+		max(.[0]; $other[0]),
+		min(.[1]; $other[1])
+	]
+	| if .[0] > .[1] then [] else . end
+	;
+
 def polyarea:
 	. as $points
 	| length as $n
