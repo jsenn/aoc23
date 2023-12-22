@@ -110,6 +110,22 @@ def solve_quadratic($a; $b; $c):
 	end
 	;
 
+def fit_quadratic_3_points:
+	.[0][0] as $x1
+	| .[0][1] as $y1
+	| .[1][0] as $x2
+	| .[1][1] as $y2
+	| .[2][0] as $x3
+	| .[2][1] as $y3
+	| (($x1 - $x2) * ($x1 - $x3) * ($x2 - $x3)) as $d
+	| (($x3 * ($y2 - $y1) + $x2 * ($y1 - $y3) + $x1 * ($y3 - $y2)) / $d) as $a
+	| (($x3 * $x3 * ($y1 - $y2) + $x2 * $x2 * ($y3 - $y1) + $x1 * $x1 * ($y2 - $y3)) / $d) as $b
+	| (($x2 * $x3 * ($x2 - $x3) * $y1 + $x3 * $x1 * ($x3 - $x1) * $y2 + $x1 * $x2 * ($x1 - $x2) * $y3) / $d) as $c
+	| [$a, $b, $c]
+	;
+
+def eval_quadratic($abc): $abc[0] * . * . + $abc[1] * . + $abc[2];
+
 def gcd($i; $j):
 	[$i, $j]
 	| until(.[1] == 0;
@@ -206,6 +222,8 @@ def swap_and_pop($i):
 	.[$i] = .[-1]
 	| pop
 	;
+
+def pop_front: . |= .[1:];
 
 def range_pairs($begin; $end):
 	range($begin; $end)

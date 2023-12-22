@@ -88,9 +88,11 @@ def pprint:
 	)
 	| Grid($grid.nrows; $grid.ncols)
 	| to_rows
-	| map(
-		join(" ")
-	)
+	| if $max_len == 1 then
+		map(join(""))
+	else
+		map(join(" "))
+	end
 	| join("\n")
 	;
 
@@ -130,10 +132,8 @@ def update($rc; expr):
 def is_edge($rc): $rc[0] == 0 or $rc[1] == 0 or $rc[0] == .nrows - 1 or $rc[1] == .ncols - 1;
 
 def find_rc($elem):
-	. as $grid
-	| .vals
-	| index($elem)
-	| if . >= 0 then i2rc($grid) else null end
+	(.vals | index($elem)) as $found_idx
+	| if $found_idx >= 0 then i2rc($found_idx) else null end
 	;
 
 def colrange($colbegin; $colend):
@@ -197,4 +197,10 @@ def flood_fill($start):
 		end
 	)
 	| .grid
+	;
+
+def manhattan_dist($q):
+	(.[0] - $q[0] | abs) as $rowdiff
+	| (.[1] - $q[1] | abs) as $coldiff
+	| $rowdiff + $coldiff
 	;
